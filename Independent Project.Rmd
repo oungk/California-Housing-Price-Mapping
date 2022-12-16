@@ -1,0 +1,183 @@
+---
+title: "Independent Project"
+author: "Katherine Oung, Vanderbilt University"
+date: "2022-10-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Research question: Based on data from California, does a house's distance to a major city impact its median value?
+```{r}
+require(tidyverse)
+require(scales)
+dat <- read_csv('../data/California_Houses.csv')
+  
+```
+UNIVARIATE DESCRIPTION
+```{r}
+dat %>%
+  ggplot(aes(x = Median_House_Value)) + 
+  geom_density() +
+  scale_x_continuous(labels = label_comma()) +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="Median House Value in California",
+       subtitle = "District-level median house prices from the 1990 census",
+       x = "Median House Value",
+       y = "Density")
+```
+
+
+```{r}
+dat <- dat %>%
+  mutate(distance = case_when(Distance_to_LA < Distance_to_SanDiego & Distance_to_LA < Distance_to_SanJose & Distance_to_LA < Distance_to_SanFrancisco ~ Distance_to_LA,
+                              Distance_to_SanDiego < Distance_to_LA & Distance_to_SanDiego < Distance_to_SanJose & Distance_to_SanDiego < Distance_to_SanFrancisco ~ Distance_to_SanDiego,
+                              Distance_to_SanJose < Distance_to_LA &  Distance_to_SanJose < Distance_to_SanDiego & Distance_to_SanJose < Distance_to_SanFrancisco ~ Distance_to_SanJose,
+                              Distance_to_SanFrancisco < Distance_to_LA & Distance_to_SanFrancisco < Distance_to_SanDiego & Distance_to_SanFrancisco < Distance_to_SanJose ~ Distance_to_SanFrancisco))
+         
+```
+
+```{r}
+dat %>%
+  ggplot(aes(x = distance)) + 
+  geom_density() +
+  scale_x_continuous(labels = label_comma()) +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="Distance from Major Californian City",
+       subtitle = "Distance from LA, San Jose, San Diego, or San Franscisco based upon 1990 census data",
+       x = "Distance",
+       y = "Density")
+```
+
+```{r}
+dat %>%
+  ggplot(aes(x = Distance_to_coast, y = Median_House_Value)) + 
+  geom_point() +
+  scale_x_continuous(labels = label_comma()) +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="Median House Value in California Based on Distance to Coast",
+       subtitle = "District-level median house prices from the 1990 census",
+       x = "Distance to coast",
+       y = "Median House Value")
+```
+
+```{r}
+dat %>%
+  ggplot(aes(x = distance, y = Median_House_Value)) + 
+  geom_point() +
+  scale_x_continuous(labels = label_comma()) +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="Median House Value in California Based on Distance to Coast",
+       subtitle = "Distance from LA, San Jose, San Diego, or San Franscisco based upon 1990 census data",
+       x = "Distance From Major City",
+       y = "Median House Value")
+```
+```{r}
+dat %>%
+  ggplot(aes(x = Distance_to_LA, y = Median_House_Value)) + 
+  geom_point() +
+  scale_x_continuous(labels = label_comma()) +
+  scale_y_continuous(labels = label_comma())  +
+  labs(title="Median House Value in California Based on Distance to LA",
+       subtitle = "District-level median house prices from the 1990 census",
+       x = "Distance to LA",
+       y = "Median House Value")
+```
+
+```{r}
+dat %>%
+  ggplot(aes(x = Distance_to_SanJose, y = Median_House_Value)) + 
+  geom_point() +
+  scale_x_continuous(labels = label_comma()) +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="Median House Value in California Based on Distance to San Jose",
+       subtitle = "District-level median house prices from the 1990 census",
+       x = "Distance to San Jose",
+       y = "Median House Value")
+```
+
+```{r}
+dat %>%
+  ggplot(aes(x = Distance_to_SanDiego, y = Median_House_Value)) + 
+  geom_point() +
+  scale_x_continuous(labels = label_comma()) +
+  scale_y_continuous(labels = label_comma()) +
+  labs(title="Median House Value in California Based on Distance to San Diego",
+       subtitle = "District-level median house prices from the 1990 census",
+       x = "Distance to San Diego",
+       y = "Median House Value")
+```
+```{r}
+dat %>%
+  ggplot(aes(x = Distance_to_SanFrancisco, y = Median_House_Value)) + 
+  geom_point() +
+  scale_x_continuous(labels = label_comma()) +
+  scale_y_continuous(labels = label_comma())  +
+  labs(title="Median House Value in California Based on Distance to San Francisco",
+       subtitle = "District-level median house prices from the 1990 census",
+       x = "Distance to San Francisco",
+       y = "Median House Value")
+```
+MAPPING
+```{r}
+require(maps)
+states48 <- map_data('state')
+
+```
+
+
+```{r}
+cities <- read_csv('../data/cal_cities_lat_long.csv')
+
+cities <- cities %>%
+  filter(Name == "Los Angeles" |
+         Name == "San Francisco" |
+         Name == "San Jose" |
+         Name == "San Diego")
+
+```
+
+```{r}
+library(scales) 
+
+california_plot <- states48 %>%  
+  filter( region == 'california') %>%
+  ggplot() + 
+  geom_polygon(aes(x = long,y = lat,group = group, fill = Median_House_Value),
+               color = 'black',
+               fill = 'grey85') + 
+  theme_void() +
+  coord_map('albers',lat0 = 30,lat1 = 40) +
+  geom_point(data = dat,
+             aes(x = Longitude, y= Latitude,
+                 color = Median_House_Value)) +
+  scale_color_gradient(low = "dark blue", high = "light blue", name = "Median House Value", labels = comma) + 
+  geom_label(data = cities,
+             aes(x = Longitude,
+            y = Latitude,
+            label = Name),
+            nudge_x = 1.9,
+            alpha = 0.5) +
+  geom_point(data = cities,
+             aes(x = Longitude,
+                 y = Latitude),
+             color = 'red',
+             size = 3) +
+  labs(title="Median House Price in California in 1990",
+       subtitle = "District-level median house prices  from the 1990 census",
+       color = 'Median House Value')
+
+california_plot
+```
+
+```{r}
+mLm <- lm(Median_House_Value ~ Distance_to_LA + Distance_to_SanJose +Distance_to_SanDiego + Distance_to_SanFrancisco, dat)
+summary(mLm)
+```
+The graphs and map suggest that as a house reaches a distance closer to a major city, its median house value increases. The linear regression controls for each variable, showing that as distance to a LA, San Diego, and San Francisco increase, the median house value decreases. Interestingly, as distance to San Jose increases, the house value increases. This result could be due to the fact that San Jose is so close to San Francisco, so increases in house prices occur as the location moves further from San Jose and toward San Francisco.
+
+
